@@ -1,9 +1,13 @@
 """Provide an interface to SPARQL query endpoints."""
 
-from cStringIO import StringIO
+try:
+        from StringIO import StringIO
+except ImportError:
+        from io import StringIO
+
 import datetime
 import urllib
-import urlparse
+from urllib.parse import urlparse
 
 import httplib2
 from lxml import objectify
