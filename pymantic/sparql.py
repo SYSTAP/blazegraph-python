@@ -280,7 +280,7 @@ class UpdateableGraphStore(SPARQLServer):
             resp, content = h.request(uri = self.dataset_url, method = 'POST',
                                       body = graph_triples,
                                       headers = {'content-type': 'text/plain',},)
-            if resp['status'] != '201':
+            if resp['status'] not in ('200', '201', '204'):
                 raise Exception('Error from Graph Store (%s): %s' %\
                                 (resp['status'], content))
 
