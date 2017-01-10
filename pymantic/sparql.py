@@ -1,9 +1,19 @@
 """Provide an interface to SPARQL query endpoints."""
 
-from cStringIO import StringIO
+try:
+    # py2
+    from StringIO import StringIO
+    import urlparse
+except ImportError:
+    # py3
+    from io import StringIO
+    from urllib.parse import urlparse
+    from urllib.parse import urlencode
+
+from builtins import str as text
+
 import datetime
 import urllib
-import urlparse
 
 import httplib2
 from lxml import objectify
@@ -64,19 +74,19 @@ class _SelectOrUpdate(object):
 
         if self.server.post_directly:
             self.headers["Content-Type"] = self.directContentType() + "; charset=utf-8"
-            uri_params = urllib.urlencode(self.params, doseq=True)
+            uri_params = urlencode(self.params, doseq=True)
             body = sparql
             method='POST'
         elif self.postQueries():
             self.headers["Content-Type"] = "application/x-www-form-urlencoded"
             uri_params = None
             self.params[self.query_or_update()] = sparql
-            body = urllib.urlencode(self.params, doseq=True)
+            body = urlencode(self.params, doseq=True)
             method='POST'
         else:
             # select only
             self.params[self.query_or_update()] = sparql
-            uri_params = urllib.urlencode(self.params, doseq=True)
+            uri_params = urlencode(self.params, doseq=True)
             body = None
             method='GET'
 
@@ -142,7 +152,7 @@ class _Select(_SelectOrUpdate):
         elif response['content-type'].startswith('application/sparql-results+json'):
             # See http://stackoverflow.com/a/19366580/2276263
             # for justification of unicode() below
-            return simplejson.loads(unicode(content, "utf-8"))
+            return simplejson.loads(text(content, "utf-8"))
         elif response['content-type'].startswith('application/sparql-results+xml'):
             return objectify.parse(StringIO(content))
         else:
@@ -215,7 +225,7 @@ class UpdateableGraphStore(SPARQLServer):
 
     def request_url(self, graph_uri):
         if self.param_style:
-            return self.dataset_url + '?' + urllib.urlencode({'graph': graph_uri})
+            return self.dataset_url + '?' + urlencode({'graph': graph_uri})
         else:
             return urlparse.urljoin(self.dataset_url, urllib.quote_plus(graph_uri))
 
@@ -270,7 +280,7 @@ class UpdateableGraphStore(SPARQLServer):
             resp, content = h.request(uri = self.dataset_url, method = 'POST',
                                       body = graph_triples,
                                       headers = {'content-type': 'text/plain',},)
-            if resp['status'] != '201':
+            if resp['status'] not in ('200', '201', '204'):
                 raise Exception('Error from Graph Store (%s): %s' %\
                                 (resp['status'], content))
 
